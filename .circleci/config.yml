@@ -1,13 +1,133 @@
 version: 2
 jobs:
   build:
-    docker:
-      - image: debian:stretch
+    macos:
+      xcode: "9.3.0"
     steps:
-      - checkout
       - run:
-          name: Greeting
-          command: echo Hello, world.
+          name: Fetch CocoaPods repository
+          command: |
+            curl https://cocoapods-specs.circleci.com/fetch-cocoapods-repo-from-s3.sh | bash -s cf
+            # Fetch cocoapods specs from S3 instead of github
       - run:
-          name: Print the Current Time
-          command: date
+          name: Setup system dependencies
+          command: |
+            brew update
+            brew cask install android-sdk
+            echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-25" "build-tools;25.0.2" "extras;android;m2repository" "extras;google;m2repository"
+            npm i -g nativescript --ignore-scripts
+            tns usage-reporting disable
+            tns error-reporting disable
+      - restore_cache:
+          key: npm-cache-{{ checksum "./package.json" }}
+      - run:
+          name: "Install node dependencies"
+          command: npm install
+      - save_cache:
+          key: npm-cache-{{ checksum "./package.json" }}
+          paths:
+            - ~/.npm
+      - run:
+          name: "Rebuild Node SASS bindings"
+          command: npm rebuild node-sass --force
+      - run:
+          name: "Pre-launch iOS Simulator"
+          command: xcrun instruments -w "iPhone 8 (11.2) [" || true
+      - run:
+          name: "Compile SASS Files - MAY BE DEPRECATED?"
+          command: ./scripts/compile-app-sass.js
+      - run:
+          name: "Reset plugins and platforms"
+          # As npm install generate some data about plugins,
+          # We launch it again after project init.
+          # It is more predictable than removing and adding platforms
+          command: rm -rf node_modules platforms && npm install
+      - run:
+          name: "Prepare ios"
+          # Hack -> git log outputed as error
+          command: tns prepare ios || echo "ios build done"
+      - run:
+          name: "Prepare Android"
+          command: tns prepare android
+
+  test-unit:
+    macos:
+      xcode: "8.3.3"
+    steps:
+      - run:
+          name: "Run unit tests"
+          # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
+          command: tns test ios --justlaunch
+
+  test-e2e:
+    macos:
+      xcode: "8.3.3"
+    steps:
+      - run:
+          name: "Run E2E tests"
+          command: echo "TODO"
+
+  deploy-qa:
+    macos:
+      xcode: "8.3.3"
+    steps:
+      - run:
+          name: "Build iOS for development"
+          command: |
+            profileUUID=$( ./scripts/get-provisioning-profile.js  Development )
+            tns build ios --bundle --env.uglify --env.aot --release --forDevice --provision $profileUUID --copy-to "./build"
+      - run:
+          name: "Build Android for development"
+          command: |
+            tns build android --bundle --env.uglify --env.snapshot --env.aot --release --copy-to ./build
+      - run:
+          name: "Send to QA"
+          command: |
+            ./scripts/deploy_qa.sh
+
+  deploy-prod:
+    macos:
+      xcode: "8.3.3"
+    steps:
+      - run:
+          name: "Build iOS for production"
+          command: |
+            profileUUID=$( ./scripts/get-provisioning-profile.js  Distribution )
+            tns build ios --bundle --env.uglify --env.aot --release --forDevice --provision $profileUUID --copy-to "./build"
+      - run:
+          name: "Build Android for production"
+          command: |
+            tns build android --bundle --env.uglify --env.snapshot --env.aot --release --keyStorePath ./keystores/mysecret.keystore --keyStorePassword secretpassword --keyStoreAlias myalias --keyStoreAliasPassword secretpassword --copy-to ./build
+      - run:
+          name: "Send to production"
+          command: |
+            ./scripts/deploy_production.sh
+
+workflows:
+  version: 2
+  build-test-and-deploy:
+    jobs:
+      - build:
+      - test-unit:
+          requires:
+            - build
+      - test-e2e:
+          requires:
+            - build
+      - deploy-qa:
+          requires:
+            - build
+            - test-unit
+            - test-e2e
+          filters:
+            branches:
+              only:
+                - develop
+      - deploy-prod:
+          requires:
+            - build
+            - test-unit
+            - test-e2e
+          filters:
+            branches:
+              only: master
