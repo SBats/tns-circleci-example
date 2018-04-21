@@ -4,6 +4,8 @@ default_config: &default_config
   working_directory: ~/circleci/tns-circleci-example
   macos:
     xcode: "9.3.0"
+  environment:
+    ANDROID_HOME: "/usr/local/share/android-sdk"
 
 jobs:
   build:
