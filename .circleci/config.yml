@@ -1,9 +1,15 @@
+default_config: &default_config
+  working_directory: ~/circleci/tns-circleci-example
+  macos:
+      xcode: "9.3.0"
+
 version: 2
 jobs:
   build:
-    macos:
-      xcode: "9.3.0"
+    <<: *default_config
     steps:
+      - checkout
+      - add_ssh_keys
       - run:
           name: Fetch CocoaPods repository
           command: |
@@ -19,12 +25,12 @@ jobs:
             tns usage-reporting disable
             tns error-reporting disable
       - restore_cache:
-          key: npm-cache-{{ checksum "./package.json" }}
+          key: npm-cache-{{ checksum "./package-lock.json" }}
       - run:
           name: "Install node dependencies"
           command: npm install
       - save_cache:
-          key: npm-cache-{{ checksum "./package.json" }}
+          key: npm-cache-{{ checksum "./package-lock.json" }}
           paths:
             - ~/.npm
       - run:
@@ -34,74 +40,71 @@ jobs:
           name: "Pre-launch iOS Simulator"
           command: xcrun instruments -w "iPhone 8 (11.2) [" || true
       - run:
-          name: "Compile SASS Files - MAY BE DEPRECATED?"
-          command: ./scripts/compile-app-sass.js
-      - run:
-          name: "Reset plugins and platforms"
-          # As npm install generate some data about plugins,
-          # We launch it again after project init.
-          # It is more predictable than removing and adding platforms
-          command: rm -rf node_modules platforms && npm install
-      - run:
           name: "Prepare ios"
           # Hack -> git log outputed as error
           command: tns prepare ios || echo "ios build done"
       - run:
           name: "Prepare Android"
           command: tns prepare android
+      - persist_to_workspace:
+          root: ~/circleci
+          paths:
+            - tns-circleci-example
 
   test-unit:
-    macos:
-      xcode: "8.3.3"
+    <<: *default_config
     steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
       - run:
           name: "Run unit tests"
           # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
           command: tns test ios --justlaunch
 
   test-e2e:
-    macos:
-      xcode: "8.3.3"
+    <<: *default_config
     steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
       - run:
           name: "Run E2E tests"
           command: echo "TODO"
 
   deploy-qa:
-    macos:
-      xcode: "8.3.3"
+    <<: *default_config
     steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
       - run:
-          name: "Build iOS for development"
+          name: "Build iOS for qa"
           command: |
-            profileUUID=$( ./scripts/get-provisioning-profile.js  Development )
-            tns build ios --bundle --env.uglify --env.aot --release --forDevice --provision $profileUUID --copy-to "./build"
+            ./scripts/build_ios.sh
       - run:
-          name: "Build Android for development"
+          name: "Build Android for qa"
           command: |
-            tns build android --bundle --env.uglify --env.snapshot --env.aot --release --copy-to ./build
+            ./scripts/build_android.sh
       - run:
           name: "Send to QA"
           command: |
             ./scripts/deploy_qa.sh
 
   deploy-prod:
-    macos:
-      xcode: "8.3.3"
+    <<: *default_config
     steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
       - run:
           name: "Build iOS for production"
           command: |
-            profileUUID=$( ./scripts/get-provisioning-profile.js  Distribution )
-            tns build ios --bundle --env.uglify --env.aot --release --forDevice --provision $profileUUID --copy-to "./build"
+            ./scripts/build_ios.sh
       - run:
           name: "Build Android for production"
           command: |
-            tns build android --bundle --env.uglify --env.snapshot --env.aot --release --keyStorePath ./keystores/mysecret.keystore --keyStorePassword secretpassword --keyStoreAlias myalias --keyStoreAliasPassword secretpassword --copy-to ./build
+            ./scripts/build_android.sh
       - run:
           name: "Send to production"
           command: |
-            ./scripts/deploy_production.sh
+            ./scripts/deploy_prod.sh
 
 workflows:
   version: 2
