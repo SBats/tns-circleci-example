@@ -1,9 +1,10 @@
+version: 2
+
 default_config: &default_config
   working_directory: ~/circleci/tns-circleci-example
   macos:
-      xcode: "9.3.0"
+    xcode: "9.3.0"
 
-version: 2
 jobs:
   build:
     <<: *default_config
@@ -110,7 +111,7 @@ workflows:
   version: 2
   build-test-and-deploy:
     jobs:
-      - build:
+      - build
       - test-unit:
           requires:
             - build
