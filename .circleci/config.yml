@@ -8,7 +8,7 @@ default_config: &default_config
     ANDROID_HOME: "/usr/local/share/android-sdk"
 
 jobs:
-  build:
+  build_test_deploy:
     <<: *default_config
     steps:
       - checkout
@@ -49,91 +49,53 @@ jobs:
       - run:
           name: "Prepare Android"
           command: tns prepare android
-      - persist_to_workspace:
-          root: ~/circleci
-          paths:
-            - tns-circleci-example
-
-  test-unit:
-    <<: *default_config
-    steps:
-      - attach_workspace:
-          at: ~/circleci/tns-circleci-example
       - run:
           name: "Run unit tests"
           # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
           command: tns test ios --justlaunch
-
-  test-e2e:
-    <<: *default_config
-    steps:
-      - attach_workspace:
-          at: ~/circleci/tns-circleci-example
       - run:
           name: "Run E2E tests"
           command: echo "TODO"
-
-  deploy-qa:
-    <<: *default_config
-    steps:
-      - attach_workspace:
-          at: ~/circleci/tns-circleci-example
       - run:
-          name: "Build iOS for qa"
+          name: "Build iOS"
           command: |
             ./scripts/build_ios.sh
       - run:
-          name: "Build Android for qa"
+          name: "Build Android"
           command: |
             ./scripts/build_android.sh
       - run:
-          name: "Send to QA"
+          name: "Deploy"
           command: |
-            ./scripts/deploy_qa.sh
-
-  deploy-prod:
-    <<: *default_config
-    steps:
-      - attach_workspace:
-          at: ~/circleci/tns-circleci-example
-      - run:
-          name: "Build iOS for production"
-          command: |
-            ./scripts/build_ios.sh
-      - run:
-          name: "Build Android for production"
-          command: |
-            ./scripts/build_android.sh
-      - run:
-          name: "Send to production"
-          command: |
-            ./scripts/deploy_prod.sh
+            ./scripts/deploy.sh
 
 workflows:
   version: 2
   build-test-and-deploy:
     jobs:
-      - build
-      - test-unit:
-          requires:
-            - build
-      - test-e2e:
-          requires:
-            - build
-      - deploy-qa:
-          requires:
-            - build
-            - test-unit
-            - test-e2e
-          filters:
-            branches:
-              only:
-                - develop
-      - deploy-prod:
-          requires:
-            - build
-            - test-unit
-            - test-e2e
-          filters:
-            branches:
-              only: master
+      - build_test_deploy
+      #  Idealy we want jobs so be setted like this, but need
+      #  ability to keep builds and env global clis between jobs
+      # - test-unit:
+      #     requires:
+      #       - build
+      # - test-e2e:
+      #     requires:
+      #       - build
+      # - deploy-qa:
+      #     requires:
+      #       - build
+      #       - test-unit
+      #       - test-e2e
+      #     filters:
+      #       branches:
+      #         only:
+      #           - develop
+      # - deploy-prod:
+      #     requires:
+      #       - build
+      #       - test-unit
+      #       - test-e2e
+      #     filters:
+      #       branches:
+      #         only: master
