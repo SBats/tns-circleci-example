@@ -24,7 +24,7 @@ jobs:
             brew update
             brew cask install android-sdk
             echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-25" "build-tools;25.0.2" "extras;android;m2repository" "extras;google;m2repository"
-            npm i -g nativescript --ignore-scripts
+            npm i -g nativescript@3.4.3 --ignore-scripts
             tns usage-reporting disable
             tns error-reporting disable
       - restore_cache:
