@@ -19,7 +19,7 @@ CURRENT_PATH=$( cd $CURRENT_PATH && pwd ) # absolutized and normalized
 #
 
 build_app () {
-  env = $( get_env_from_branch )
+  env=$( get_env_from_branch )
   echo "Deploying for env $env"
   if [ "$env" == "$PROD_ENV" ]
   then

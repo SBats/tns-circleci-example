@@ -5,7 +5,7 @@
 #
 # Variables
 #
-BUNDLE_ID = $1
+BUNDLE_ID="$1"
 CURRENT_PATH=$( dirname "$0" ) # relative
 CURRENT_PATH=$( cd $CURRENT_PATH && pwd ) # absolutized and normalized
 
@@ -20,7 +20,7 @@ CURRENT_PATH=$( cd $CURRENT_PATH && pwd ) # absolutized and normalized
 #
 
 build_app () {
-  env = $( get_env_from_branch )
+  env=$( get_env_from_branch )
   echo "Building iOS app for env $env"
   # For demo purpose, we build an unsigned ipa as we don't have a matching iTunes Connect account
   if [ "$env" == "$PROD_ENV" ]
