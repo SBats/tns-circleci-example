@@ -87,7 +87,7 @@ jobs:
             npx tns error-reporting disable
             echo "TODO"
 
-  deploy-prod:
+  deploy:
     <<: *default_config
     steps:
       - attach_workspace:
