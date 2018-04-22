@@ -66,7 +66,7 @@ jobs:
     <<: *default_config
     steps:
       - attach_workspace:
-          at: ~/circleci/tns-circleci-example
+          at: ~/circleci
       - run:
           name: "Run unit tests"
           # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
@@ -76,7 +76,7 @@ jobs:
     <<: *default_config
     steps:
       - attach_workspace:
-          at: ~/circleci/tns-circleci-example
+          at: ~/circleci
       - run:
           name: "Run E2E tests"
           command: echo "TODO"
@@ -85,7 +85,7 @@ jobs:
     <<: *default_config
     steps:
       - attach_workspace:
-          at: ~/circleci/tns-circleci-example
+          at: ~/circleci
       - run:
           name: "Deploy"
           command: |
