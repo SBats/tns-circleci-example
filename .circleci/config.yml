@@ -70,7 +70,10 @@ jobs:
       - run:
           name: "Run unit tests"
           # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
-          command: npx tns test ios --justlaunch
+          command: |
+            npx tns usage-reporting disable
+            npx tns error-reporting disable
+            npx tns test ios --justlaunch
 
   test-e2e:
     <<: *default_config
@@ -79,7 +82,10 @@ jobs:
           at: ~/circleci
       - run:
           name: "Run E2E tests"
-          command: echo "TODO"
+          command: |
+            npx tns usage-reporting disable
+            npx tns error-reporting disable
+            echo "TODO"
 
   deploy-prod:
     <<: *default_config
@@ -89,6 +95,8 @@ jobs:
       - run:
           name: "Deploy"
           command: |
+            npx tns usage-reporting disable
+            npx tns error-reporting disable
             ./scripts/deploy.sh
 
 workflows:
