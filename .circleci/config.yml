@@ -59,7 +59,7 @@ jobs:
       - run:
           name: "Build iOS"
           command: |
-            ./scripts/build_ios.sh
+            ./scripts/build_ios.sh org.nativescript.circleciint
       - run:
           name: "Build Android"
           command: |
