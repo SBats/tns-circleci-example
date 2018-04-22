@@ -8,7 +8,7 @@ default_config: &default_config
     ANDROID_HOME: "/usr/local/share/android-sdk"
 
 jobs:
-  build_test_deploy:
+  build:
     <<: *default_config
     steps:
       - checkout
@@ -24,9 +24,8 @@ jobs:
             brew update
             brew cask install android-sdk
             echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-25" "build-tools;25.0.2" "extras;android;m2repository" "extras;google;m2repository"
-            npm i -g nativescript@3.4.3 --ignore-scripts
-            tns usage-reporting disable
-            tns error-reporting disable
+            npx tns usage-reporting disable
+            npx tns error-reporting disable
       - restore_cache:
           key: npm-cache-{{ checksum "./package-lock.json" }}
       - run:
@@ -45,17 +44,10 @@ jobs:
       - run:
           name: "Prepare ios"
           # Hack -> git log outputed as error
-          command: tns prepare ios || echo "ios build done"
+          command: npx tns prepare ios || echo "ios build done"
       - run:
           name: "Prepare Android"
-          command: tns prepare android
-      - run:
-          name: "Run unit tests"
-          # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
-          command: tns test ios --justlaunch
-      - run:
-          name: "Run E2E tests"
-          command: echo "TODO"
+          command: npx tns prepare android
       - run:
           name: "Build iOS"
           command: |
@@ -64,6 +56,35 @@ jobs:
           name: "Build Android"
           command: |
             ./scripts/build_android.sh
+      - persist_to_workspace:
+          root: ~/circleci
+          paths:
+            - tns-circleci-example
+
+  test-unit:
+    <<: *default_config
+    steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
+      - run:
+          name: "Run unit tests"
+          # --justlaunch ensure the unit test suite give the hand back to the CLI in the end
+          command: npx tns test ios --justlaunch
+
+  test-e2e:
+    <<: *default_config
+    steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
+      - run:
+          name: "Run E2E tests"
+          command: echo "TODO"
+
+  deploy-prod:
+    <<: *default_config
+    steps:
+      - attach_workspace:
+          at: ~/circleci/tns-circleci-example
       - run:
           name: "Deploy"
           command: |
@@ -73,29 +94,15 @@ workflows:
   version: 2
   build-test-and-deploy:
     jobs:
-      - build_test_deploy
-      #  Idealy we want jobs so be setted like this, but need
-      #  ability to keep builds and env global clis between jobs
-      # - test-unit:
-      #     requires:
-      #       - build
-      # - test-e2e:
-      #     requires:
-      #       - build
-      # - deploy-qa:
-      #     requires:
-      #       - build
-      #       - test-unit
-      #       - test-e2e
-      #     filters:
-      #       branches:
-      #         only:
-      #           - develop
-      # - deploy-prod:
-      #     requires:
-      #       - build
-      #       - test-unit
-      #       - test-e2e
-      #     filters:
-      #       branches:
-      #         only: master
+      - build
+      - test-unit:
+          requires:
+            - build
+      - test-e2e:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - build
+            - test-unit
+            - test-e2e

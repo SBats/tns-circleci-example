@@ -21,20 +21,20 @@ log_section () {
 build_ios_app () {
   profileUUID=$( $SCRIPT_PATH/get-provisioning-profile.js $1 Development )
   cd $CORE_PATH
-  tns build ios --bundle --env.uglify --env.aot --forDevice --provision $profileUUID --copy-to "$BUILD_PATH/$IOS_IPA"
+  npx tns build ios --bundle --env.uglify --env.aot --forDevice --provision $profileUUID --copy-to "$BUILD_PATH/$IOS_IPA"
   cd $BASE_PATH
 }
 
 build_prod_ios_app () {
   profileUUID=$( $SCRIPT_PATH/get-provisioning-profile.js $1 Distribution )
   cd $CORE_PATH
-  tns build ios --bundle --env.uglify --env.aot --forDevice --release --provision $profileUUID --copy-to "$BUILD_PATH/$IOS_IPA"
+  npx tns build ios --bundle --env.uglify --env.aot --forDevice --release --provision $profileUUID --copy-to "$BUILD_PATH/$IOS_IPA"
   cd $BASE_PATH
 }
 
 build_unsigned_ios_app () {
   cd $CORE_PATH
-  tns build ios --bundle --env.uglify --env.aot
+  npx tns build ios --bundle --env.uglify --env.aot
   cd $BASE_PATH
 }
 
@@ -43,7 +43,7 @@ build_unsigned_ios_app () {
 ##################################################################
 build_android_app () {
   cd $CORE_PATH
-  tns build android --bundle --env.uglify --env.aot --env.snapshot --copy-to "$BUILD_PATH/$ANDROID_APK"
+  npx tns build android --bundle --env.uglify --env.aot --env.snapshot --copy-to "$BUILD_PATH/$ANDROID_APK"
   cd $BASE_PATH
 }
 
@@ -52,7 +52,7 @@ build_android_app () {
 ##################################################################
 build_prod_android_app () {
   cd $CORE_PATH
-  tns build android --bundle --env.uglify --env.aot --env.snapshot --copy-to "$BUILD_PATH/$ANDROID_APK" --release --keyStorePath "$KEYSTORE_PATH/$KEYSTORE_FILE" --keyStorePassword $KEYSTORE_PWD --keyStoreAlias $KEYSTORE_ALIAS --keyStoreAliasPassword $KEYSTORE_ALIAS_PWD
+  npx tns build android --bundle --env.uglify --env.aot --env.snapshot --copy-to "$BUILD_PATH/$ANDROID_APK" --release --keyStorePath "$KEYSTORE_PATH/$KEYSTORE_FILE" --keyStorePassword $KEYSTORE_PWD --keyStoreAlias $KEYSTORE_ALIAS --keyStoreAliasPassword $KEYSTORE_ALIAS_PWD
   cd $BASE_PATH
 }
 
