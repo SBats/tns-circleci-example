@@ -24,13 +24,14 @@ jobs:
             brew update
             brew cask install android-sdk
             echo y | $ANDROID_HOME/tools/bin/sdkmanager "platform-tools" "platforms;android-25" "build-tools;25.0.2" "extras;android;m2repository" "extras;google;m2repository"
-            npx tns usage-reporting disable
-            npx tns error-reporting disable
       - restore_cache:
           key: npm-cache-{{ checksum "./package-lock.json" }}
       - run:
           name: "Install node dependencies"
-          command: npm install
+          command: |
+            npm install
+            npx tns usage-reporting disable
+            npx tns error-reporting disable
       - save_cache:
           key: npm-cache-{{ checksum "./package-lock.json" }}
           paths:
